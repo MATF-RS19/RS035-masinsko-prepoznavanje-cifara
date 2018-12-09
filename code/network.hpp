@@ -3,34 +3,48 @@
 
 class network{
 public:
-    network(std::vector<size_t>& topology, double learning_rate);
+    network(const std::vector<size_t>& topology, double learning_rate);
     double learning_rate() const=0;
     void set_learning_rate(double learning_rate);
-    const std::vector<double>& estimate() const=0;
-    bool feed(const std::vector<double>& input_values);
+    const std::vector<double>& see_output() const=0;
+    bool feed(const std::vector<double>& input);
+    bool propogate(const std::vector<double>& output);
+    bool propogate(size_t output);
     void descend();
-    void reset_epoch();
     
 protected:
-    typedef std::vector<double> layer;
-    typedef std::vector< std::vector<double> > weights;
+    typedef std::vector<neuron> layer;
+    typedef std::vector<std::vector<double> > weights;
     typedef std::vector<double> biases;
     typedef std::vector<double> errors;
     
 private:
     size_t input_size;
     std::vector<layer> inner_layers;
-    std::vector<weights> matrices;
+    std::vector<weights> weight;
     std::vector<biases> bias;
-    
-    double learning_rate;
-    
-    std::vector<weights> epoch_matrices;
-    std::vector<errors> epoch_errors;
-    size_t epoch_size;
-};
+    std::vector<errors> error;
 
-double sigmoid(double x);
-double sigmoid_prime(double x);
+    double learning_rate;
+    double (*activate) (double);
+    double (*activate_prime) (double);
+
+    std::vector<weights> epoch_weight;
+    std::vector<errors> epoch_error;
+    size_t epoch_size;
+
+    void propogate_back();
+
+    class neuron{
+    public:
+        neuron();
+        double value() const=0;
+        double input() const=0;
+        void feed(double input);
+
+    private:
+        double value, input;
+    };
+};
 
 #endif
