@@ -1,54 +1,130 @@
 #include "network.hpp"
+#include <random>
+
+
+network::network(const std::vector<size_t>& topology, double learning_rate)
+: m_input_size(), m_inner_layers(), m_weights(), m_biases(), m_errors(), m_learning_rate(learning_rate), m_epoch_weights(), m_epoch_errors(), m_epoch_size(0)
+{
+
+    
+    m_input_size = topology[0];
+    
+    
+    for(size_t i = 1; i<topology.size(); i++){
+        m_inner_layers.push_back(layer());
+        m_epoch_errors.push_back(error());
+        m_errors.push_back(error());
+        m_biases.push_back(bias());
+        
+        for(size_t j=0; j<topology[i]; j++){
+            m_inner_layers[i-1].push_back(neuron());
+            m_epoch_errors[i-1].push_back(0);
+            m_errors[i-1].push_back(0);
+            m_biases[i-1].push_back( std::uniform_real_distribution<> (0.0, 1.0) );
+        }
+    }
+    
+    m_weights.push_back(weight());
+    m_epoch_weights.push_back(weight());
+    for(size_t j=0;j<m_inner_layers[0].size(); j++){
+        m_weights[0].push_back( std::vector<double>() );
+        m_epoch_weights[0].push_back( std::vector<double>() );
+        
+        for(size_t k=0; k<m_input_size; k++){
+            m_weights[0][j].push_back( std::uniform_real_distribution<> (0.0, 1.0) );
+            m_epoch_weights[0][j].push_back(0);
+        }
+    }
+    
+    
+    
+
+}
 
 bool network::feed(const std::vector<double>& input){
-	if(input.size()!=input_size)
+	if(input.size()!=m_input_size)
 		return false;
-	for(size_t i=0; i<inner_layers[0].size(); ++i){
+	for(size_t i=0; i<m_inner_layers[0].size(); ++i){
 		double sum=0;
 		for(size_t j=0; j<input[0][i].size(); ++j)
-			sum+=weight[0][i][j]*input[j];
-		inner_layers[0][i].feed(sum+bias[0][i]);
+			sum+=m_weights[0][i][j]*input[j];
+		m_inner_layers[0][i].feed(sum+m_biases[0][i]);
 	}
-	for(size_t i=1; i<inner_layers.size(); ++i)
-		for(size_t j=0; j<inner_layers[i].size(); ++j){
+	for(size_t i=1; i<m_inner_layers.size(); ++i)
+		for(size_t j=0; j<m_inner_layers[i].size(); ++j){
 			double sum=0;
-			for(size_t k=0; k<weight[i][j].size(); ++k)
-				sum+=weight[i][j][k]*inner_layers[i-1][k];
-			inner_layers[i][j].feed(sum+bias[i][j];
+			for(size_t k=0; k<m_weights[i][j].size(); ++k)
+				sum+=m_weights[i][j][k]*m_inner_layers[i-1][k];
+			m_inner_layers[i][j].feed(sum+m_biases[i][j];
 		}	
 	return true;
 }
 
-bool network::propogate(const std::vector<double>& output){
-	if(output.size()!=inner_layers[inner_layers.size()-1].size())
+bool network::propagate(const std::vector<double>& output){
+	if(output.size()!=m_inner_layers[inner_layers.size()-1].size())
 		return false;
-	for(size_t i=0, last=inner_layers.size()-1; i<inner_layers[last].size(); ++i)
-		error[last][i]=(inner_layers[last][i]-output[i])*
-			activate_prime(inner_layers[last][i].input());
-	propogate_back();
+	for(size_t i=0, last=m_inner_layers.size()-1; i<m_inner_layers[last].size(); ++i)
+		m_errors[last][i]=(m_inner_layers[last][i]-output[i])*
+			activate_prime(m_inner_layers[last][i].input());
+	propagate_back();
 	return true;
 }
 
-bool network::propogate(size_t output){
-	if(output>=inner_layers.size())
+bool network::propagate(size_t output){
+	if(output>=m_inner_layers.size())
 		return false;
-	for(size_t i=0, last=inner_layers.size()-1; i<inner_layers[last].size(); ++i)
-                error[last][i]=(inner_layers[last][i]-output==j)*
-                        activate_prime(inner_layers[last][i].input());
-        propogate_back();
+	for(size_t i=0, last=m_inner_layers.size()-1; i<m_inner_layers[last].size(); ++i)
+                m_errors[last][i]=(m_inner_layers[last][i]-output==j)*
+                        activate_prime(m_inner_layers[last][i].input());
+        propagate_back();
         return true;
 
 }
 
-network::neuron::value() const=0{
-        return value;
+
+void network::descent() {
+        double coeff = m_learning_rate/m_epoch_size;
+        
+        for(size_t i=0; i<m_weights.size(); ++i){
+            for(size_t j=0; j<m_weights[i].size(); ++j){
+                for(size_t k=0; k<m_weights[i][j].size(); ++k){
+                    m_weights[i][j][k] = m_weights[i][j][k] - coeff*m_epoch_weights[i][j][k];
+                    m_epoch_weights[i][j][k]=0;
+                }
+            }
+        }
+        
+        for(size_t i=0; i<m_biases.size();i++){
+            for(size_t j=0; j<m_biases[i].size(); j++){
+                m_biases[i][j] = m_biases[i][j] - coeff*m_epoch_errors[i][j];
+                m_epoch_errors[i][j]=0;
+            }
+        }
+        
+        m_epoch_size = 0;
 }
 
-network::neuron::input() const=0{
-        return input;
+double network::learning_rate() const=0{
+    return m_learning_rate;
 }
 
-network::neuron::feed(double input){
-        this->input=input;
-        value=activate(input);
+void network::set_learning_rate(double learning_rate) {
+     m_learning_rate = learning_rate;
+}
+
+network::neuron::neuron()
+: m_value(0), m_input(0)
+{}
+
+double network::neuron::value() const=0{
+        return m_value;
+}
+
+double network::neuron::input() const=0{
+        return m_input;
+}
+
+void network::neuron::feed(double input){
+        this->m_input=input;
+        value=activate(m_input);
 }
