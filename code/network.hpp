@@ -3,47 +3,47 @@
 
 class network{
 public:
-    network(const std::vector<size_t>& topology, double learning_rate);
-    double learning_rate() const=0;
-    void set_learning_rate(double learning_rate);
-    const std::vector<double>& see_output() const=0;
-    bool feed(const std::vector<double>& input);
-    bool propogate(const std::vector<double>& output);
-    bool propogate(size_t output);
-    void descend();
-    
+    network(const std::vector<size_t>& topology, double learning_rate);  
+    double learning_rate() const=0; 
+    void set_learning_rate(double learning_rate); 
+    const std::vector<double>& see_output() const=0; 
+    bool feed(const std::vector<double>& input);  
+    bool propagate(const std::vector<double>& output); 
+    bool propagate(size_t output); 
+    void descend();      
+    void propagate_back();   
+
 protected:
     typedef std::vector<neuron> layer;
-    typedef std::vector<std::vector<double> > weights;
-    typedef std::vector<double> biases;
-    typedef std::vector<double> errors;
+    typedef std::vector<std::vector<double> > weight;
+    typedef std::vector<double> bias;
+    typedef std::vector<double> error;
     
 private:
-    size_t input_size;
-    std::vector<layer> inner_layers;
-    std::vector<weights> weight;
-    std::vector<biases> bias;
-    std::vector<errors> error;
+    size_t m_input_size;
+    std::vector<layer> m_inner_layers;
+    std::vector<weight> m_weights;
+    std::vector<bias> m_biases;
+    std::vector<error> m_errors;
 
-    double learning_rate;
-    double (*activate) (double);
-    double (*activate_prime) (double);
+    double m_learning_rate;
+    double (*activate) (double);     
+    double (*activate_prime) (double);  
 
-    std::vector<weights> epoch_weight;
-    std::vector<errors> epoch_error;
-    size_t epoch_size;
-
-    void propogate_back();
+    std::vector<weight> m_epoch_weights;
+    std::vector<error> m_epoch_errors;
+    size_t m_epoch_size;
 
     class neuron{
     public:
-        neuron();
-        double value() const=0;
-        double input() const=0;
-        void feed(double input);
+        neuron(); 
+        double value() const=0;     
+        double input() const=0;     
+        void feed(double input); 
 
     private:
-        double value, input;
+        double m_value;
+        double m_input;
     };
 };
 
