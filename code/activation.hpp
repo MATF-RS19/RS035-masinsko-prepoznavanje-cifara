@@ -5,4 +5,4 @@ double sigmoid(double x);
 
 double sigmoid_prime(double x);
 
-#endif __ACTIVATION_HPP___ __
+#endif 
