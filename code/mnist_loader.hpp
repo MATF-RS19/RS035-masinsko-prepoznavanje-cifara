@@ -17,14 +17,18 @@ public:
     void close();
     size_t image_counter() const;
     size_t image_number() const;
-    void read_mnist(std::vector<std::vector<double> >& dst);
-    void read_mnist(std::vector<cv::Mat>& dst);
-    void iterate_mnist(std::vector<double>& dst);
-    void iterate_mnist(cv::Mat& dst);
+    void read_mnist(std::vector<std::vector<double> >& vectors);
+    void read_mnist(std::vector<cv::Mat>& matrices);
+    void read_mnist(std::vector<std::vector<double> >& vectors, std::vector<cv::Mat>& matrices);
+    void iterate_mnist(std::vector<double>& vector);
+    void iterate_mnist(cv::Mat& matrix);
+    void iterate_mnist(std::vector<double>& vector, cv::Mat& matrix);
     void reset_iterator();
     std::tuple<size_t, size_t, size_t> format() const;
     
-    static cv::Mat rotate(const cv::Mat& src, double angle);
+    static cv::Mat rotate(const cv::Mat& matrix, double angle);
+    static cv::Mat to_matrix(const std::vector<double>& vector, size_t rows, size_t cols);
+    static std::vector<double> to_vector(const cv::Mat& matrix);
     static std::vector<double> random_noise(size_t size);
 private:
     std::ifstream m_fin;
@@ -32,7 +36,10 @@ private:
     unsigned char m_offset;
     size_t m_image_counter, m_image_size;
     
-    static void load(std::ifstream& fin, size_t& image_counter, size_t& n_rows, size_t& n_cols);
+    void load();
+    std::vector<double> generate_vector();
+    cv::Mat generate_matrix();
+    
     static int reverse(int i);
 };
 
