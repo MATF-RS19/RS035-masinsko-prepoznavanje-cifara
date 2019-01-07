@@ -8,10 +8,12 @@
 #include <utility>
 #include <fstream>
 
-network::network(const std::string& name, const std::vector<size_t>& topology, double learning_rate):network(name, topology, learning_rate, sigmoid, sigmoid_prime){}
+#include <iostream>
 
-network::network(const std::string& name, const std::vector<size_t>& topology, double learning_rate, double (*activate)(double), double (*activate_prime)(double)):
-    m_name(name), m_input_layer(topology.front()), m_inner_layers(topology.size()-1, layer()), m_weights(topology.size()-1, weight()), m_biases(topology.size()-1, bias()), m_errors(topology.size()-1, error()), m_learning_rate(learning_rate), m_activate(activate), m_activate_prime(activate_prime), m_statistics(topology.back()), m_epoch_weights(topology.size()-1, weight()), m_epoch_errors(topology.size()-1, error()), m_epoch_size(0), m_epoch_statistics(topology.back())
+network::network(const std::string& pathname, const std::vector<size_t>& topology, double learning_rate):network(pathname, topology, learning_rate, sigmoid, sigmoid_prime){}
+
+network::network(const std::string& pathname, const std::vector<size_t>& topology, double learning_rate, double (*activate)(double), double (*activate_prime)(double)):
+    m_pathname(pathname), m_input_layer(topology.front()), m_inner_layers(topology.size()-1, layer()), m_weights(topology.size()-1, weight()), m_biases(topology.size()-1, bias()), m_errors(topology.size()-1, error()), m_learning_rate(learning_rate), m_activate(activate), m_activate_prime(activate_prime), m_statistics(topology.back()), m_epoch_weights(topology.size()-1, weight()), m_epoch_errors(topology.size()-1, error()), m_epoch_size(0), m_epoch_statistics(topology.back())
 {  
     std::default_random_engine bias_generator, weight_generator;
     std::uniform_real_distribution<double> bias_distribution(0.0, 1.0), weight_distribution(0.0, 1.0);
@@ -41,12 +43,12 @@ network::network(const std::string& name, const std::vector<size_t>& topology, d
     }
 }
 
-network::network(const std::string& name):network(name, sigmoid, sigmoid_prime){}
+network::network(const std::string& pathname):network(pathname, sigmoid, sigmoid_prime){}
 
-network::network(const std::string& name, double (*activate) (double), double (*activate_prime) (double)):
-    m_name(name), m_activate(activate), m_activate_prime(activate_prime), m_epoch_size(0)
+network::network(const std::string& pathname, double (*activate) (double), double (*activate_prime) (double)):
+    m_pathname(pathname), m_activate(activate), m_activate_prime(activate_prime), m_epoch_size(0)
 {
-    std::ifstream fin(name+".network", std::ios::in);
+    std::ifstream fin(pathname, std::ios::in);
     size_t topology_size;
     fin>>topology_size;
     
@@ -59,14 +61,16 @@ network::network(const std::string& name, double (*activate) (double), double (*
     
     std::generate_n(std::back_inserter(m_inner_layers), topology_size-1, generator<layer>);
     std::generate_n(std::back_inserter(m_weights), topology_size-1, generator<weight>);
-    std::generate_n(std::back_inserter(m_biases), topology_size-1, generator<std::vector<double> >);
-    std::generate_n(std::back_inserter(m_errors), topology_size-1, generator<std::vector<double> >);
+    std::generate_n(std::back_inserter(m_biases), topology_size-1, generator<bias>);
+    std::generate_n(std::back_inserter(m_errors), topology_size-1, generator<error>);
     std::generate_n(std::back_inserter(m_epoch_weights), topology_size-1, generator<weight>);
-    std::generate_n(std::back_inserter(m_epoch_errors), topology_size-1, generator<std::vector<double> >);
+    std::generate_n(std::back_inserter(m_epoch_errors), topology_size-1, generator<error>);
     
     std::vector<size_t> topology;
     std::copy_n(std::istream_iterator<size_t>(fin), topology_size, std::back_inserter(topology));
     
+    m_input_layer.reserve(topology.front());
+    std::fill_n(std::back_inserter(m_input_layer), topology.front(), 0.0);
     m_statistics.set_size(topology.back());
     m_epoch_statistics.set_size(topology.back());
 
@@ -97,8 +101,8 @@ network::network(const std::string& name, double (*activate) (double), double (*
     read(fin);
 }
 
-std::string network::name() const{
-    return m_name;
+std::string network::pathname() const{
+    return m_pathname;
 }
 
 double network::learning_rate() const{
@@ -113,8 +117,8 @@ size_t network::output_size() const{
     return m_inner_layers.back().size();
 }
 
-void network::set_name(const std::string& name){
-    m_name=name;
+void network::set_pathname(const std::string& pathname){
+    m_pathname=pathname;
 }
 
 void network::set_learning_rate(double learning_rate){
@@ -142,41 +146,16 @@ void network::feed(std::vector<double>&& input){
     feed();		
 }
 
-void network::propagate(size_t index){
-    {
+void network::track(size_t index){
     bool flag = output_pair().first==index;
     m_statistics.add(index, flag);
     m_epoch_statistics.add(index, flag);
-    }
+}
+
+void network::propagate(size_t index){
 	for(size_t i=0; i<m_inner_layers.back().size(); ++i)
         m_errors.back()[i]=(m_inner_layers.back()[i].value()-index==i)*m_activate_prime(m_inner_layers.back()[i].input());
     propagate_back();
-}
-
-void network::propagate_back(){
-    for(size_t curr = m_errors.size()-2; curr >= 0; --curr)
-        for(size_t i=0; i<m_errors[curr].size(); ++i){
-            double err=0.0;
-            for(size_t j=0; j<m_weights[curr+1].size(); ++j)
-                err += m_weights[curr+1][j][i] * m_errors[curr+1][j];
-            m_errors[curr][i] = err * m_activate_prime(m_inner_layers[curr][i].input());
-        }
-
-    for(size_t i=0; i<m_epoch_weights[0].size(); ++i){
-        double tmp=m_errors[0][i];
-        std::transform(m_epoch_weights[0][i].cbegin(), m_epoch_weights[0][i].cend(), m_input_layer.cbegin(), m_epoch_weights[0][i].begin(), [tmp](double a, double b){return a+tmp*b;});
-    }
-    
-    for(size_t i=1; i<m_epoch_weights.size(); ++i)
-        for(size_t j=0; j<m_epoch_weights[i].size(); ++j){
-            double tmp=m_errors[i][j];
-            std::transform(m_epoch_weights[i][j].cbegin(), m_epoch_weights[i][j].cend(), m_inner_layers[i-1].cbegin(), m_epoch_weights[i][j].begin(), 
-                           [tmp](double a, const neuron& b){return a+tmp*b.value();});
-        }
-            
-    for(size_t i=0; i<m_epoch_errors.size(); ++i)
-        std::transform(m_epoch_errors[i].cbegin(), m_epoch_errors[i].cend(), m_errors[i].cbegin(), m_epoch_errors[i].begin(), [](double a, double b){return a+b;});
-    ++m_epoch_size;
 }
 
 void network::descend(){
@@ -255,11 +234,11 @@ void network::write_state(const std::string& pathname) const{
 }
 
 void network::read_state(){
-    read_state(m_name+".network");
+    read_state(m_pathname);
 }
 
 void network::write_state() const{
-    write_state(m_name+".network");
+    write_state(m_pathname);
 }
 
 network::stats::stats(){}
@@ -339,4 +318,30 @@ void network::feed(){
     for(size_t i=1; i<m_inner_layers.size(); ++i)
         for(size_t j=0; j<m_inner_layers[i].size(); ++j)
             m_inner_layers[i][j].feed(m_biases[i][j]+std::inner_product(m_weights[i][j].cbegin(), m_weights[i][j].cend(), m_inner_layers[i-1].cbegin(), 0.0, [](double a, double b){return a+b;}, [](double a, const neuron& b){return a*b.value();}), m_activate);
+}
+
+void network::propagate_back(){
+    for(size_t curr = m_errors.size()-1; curr > 0; --curr)
+        for(size_t i=0; i<m_errors[curr-1].size(); ++i){
+            double err=0.0;
+            for(size_t j=0; j<m_weights[curr].size(); ++j)
+                err += m_weights[curr][j][i] * m_errors[curr][j];
+            m_errors[curr-1][i] = err * m_activate_prime(m_inner_layers[curr-1][i].input());
+        }
+
+    for(size_t i=0; i<m_epoch_weights[0].size(); ++i){
+        double tmp=m_errors[0][i];
+        std::transform(m_epoch_weights[0][i].cbegin(), m_epoch_weights[0][i].cend(), m_input_layer.cbegin(), m_epoch_weights[0][i].begin(), [tmp](double a, double b){return a+tmp*b;});
+    }
+    
+    for(size_t i=1; i<m_epoch_weights.size(); ++i)
+        for(size_t j=0; j<m_epoch_weights[i].size(); ++j){
+            double tmp=m_errors[i][j];
+            std::transform(m_epoch_weights[i][j].cbegin(), m_epoch_weights[i][j].cend(), m_inner_layers[i-1].cbegin(), m_epoch_weights[i][j].begin(), 
+                           [tmp](double a, const neuron& b){return a+tmp*b.value();});
+        }
+            
+    for(size_t i=0; i<m_epoch_errors.size(); ++i)
+        std::transform(m_epoch_errors[i].cbegin(), m_epoch_errors[i].cend(), m_errors[i].cbegin(), m_epoch_errors[i].begin(), [](double a, double b){return a+b;});
+    ++m_epoch_size;
 }
