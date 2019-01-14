@@ -28,14 +28,17 @@ NeuralNetwork::~NeuralNetwork()
 void NeuralNetwork::on_pushButton_clicked()
 {
     QString imageName = ui->textEdit_5->toPlainText();
+    if(imageName.isEmpty()){
+        ui->textEdit->setText("Nije uneta slika.");
+        return;
+    }
     std::string tmp_name = imageName.toUtf8().constData();
     std::vector<double> pixels;
     Mat image = imread(tmp_name, CV_LOAD_IMAGE_GRAYSCALE);
     pixels = data_loader::to_vector(image);
     network net("mreza");
-    net.read_state();
     net.feed(pixels);
-    int number=net.result();
+    int number=net.output_pair().first;
 
     QString valueAsStr = QString::number(number);
     ui->textEdit->setText(valueAsStr);
@@ -78,7 +81,7 @@ void NeuralNetwork::on_pushButton_2_clicked()
 void NeuralNetwork::on_pushButton_3_clicked()
 {
     network net("mreza");
-    net.read_state();
+    //net.read_state();
     std::vector<std::vector<double>> c_images;
     std::vector<size_t> c_labels;
     data_loader data;
@@ -90,6 +93,7 @@ void NeuralNetwork::on_pushButton_3_clicked()
     for(size_t i=0; i<c_images.size(); i++){
         net.feed(c_images[i]);
         net.track(c_labels[i]);
+
     }
     double stat=net.statistics();
     ui->textEdit_2->setPlainText("Statistika:");

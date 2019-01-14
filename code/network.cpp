@@ -26,7 +26,7 @@ network::network(const std::string& pathname, const std::vector<size_t>& topolog
         m_epoch_weights[i-1].reserve(topology[i]);
         
         std::generate_n(std::back_inserter(m_inner_layers[i-1]), topology[i], generator<neuron>);
-        std::generate_n(std::back_inserter(m_biases[i-1]), topology[i], [&bias_generator, &bias_distribution]() mutable {return bias_distribution(bias_generator);});
+        std::generate_n(std::back_inserter(m_biases[i-1]), topology[i], [&bias_generator, &bias_distribution]() {return bias_distribution(bias_generator);});
         std::fill_n(std::back_inserter(m_errors[i-1]), topology[i], 0.0);
         std::fill_n(std::back_inserter(m_epoch_errors[i-1]), topology[i], 0.0);
         
@@ -37,7 +37,7 @@ network::network(const std::string& pathname, const std::vector<size_t>& topolog
             m_epoch_weights[i-1][j].reserve(topology[i-1]);
             
             std::generate_n(std::back_inserter(m_weights[i-1][j]), topology[i-1], 
-                [&weight_generator, &weight_distribution]() mutable {return weight_distribution(weight_generator);});
+                [&weight_generator, &weight_distribution]() {return weight_distribution(weight_generator);});
             std::fill_n(std::back_inserter(m_epoch_weights[i-1][j]), topology[i-1], 0.0);
         }
     }
