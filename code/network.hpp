@@ -32,7 +32,8 @@ public:
     void write_state(const std::string& pathname) const;
     void read_state();
     void write_state() const;
-    
+    int result() const;
+
 private:
     class stats{
     public:
@@ -56,7 +57,7 @@ private:
         void set_value(double value);
         void set_input(double input);
         void feed(double input, double (*activate)(double));
-
+        bool operator < (const network::neuron & other) const;
     private:
         double m_value;
         double m_input;

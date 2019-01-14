@@ -345,3 +345,19 @@ void network::propagate_back(){
         std::transform(m_epoch_errors[i].cbegin(), m_epoch_errors[i].cend(), m_errors[i].cbegin(), m_epoch_errors[i].begin(), [](double a, double b){return a+b;});
     ++m_epoch_size;
 }
+
+
+bool network::neuron::operator < (const network::neuron & other) const
+{
+    return this->value() < other.value();
+}
+
+
+int network::result() const {
+
+    auto iter = std::max_element(m_inner_layers[m_inner_layers.size()-1].begin(),
+            m_inner_layers[m_inner_layers.size()-1].end());
+
+    return iter-m_inner_layers[m_inner_layers.size()-1].begin();
+
+}
