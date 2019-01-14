@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>517</width>
-    <height>310</height>
+    <width>564</width>
+    <height>346</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -52,6 +52,26 @@ font: 75 11pt &quot;Century Schoolbook L&quot;;
         </property>
         <property name="text">
          <string>TRENIRAJ MREZU</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QLabel{
+background-color:rgb(255, 255, 255);
+color: rgb(0, 0, 0);
+font: 75 11pt &quot;Century Schoolbook L&quot;;
+}</string>
+        </property>
+        <property name="text">
+         <string>Status treniranja:</string>
         </property>
        </widget>
       </item>
@@ -188,6 +208,23 @@ background-color: rgb(255, 255, 255);
         </property>
         <property name="text">
          <string>TESTIRAJ MREZU</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTextEdit" name="textEdit_6">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QTextEdit{
+background-color:rgb(255, 255, 255);
+color: rgb(0, 0, 0);
+font: 75 11pt &quot;Century Schoolbook L&quot;;
+}</string>
         </property>
        </widget>
       </item>

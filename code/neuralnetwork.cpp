@@ -70,7 +70,7 @@ void NeuralNetwork::on_pushButton_2_clicked()
         net.descend();
 
     }
-
+    ui->textEdit_6->setPlainText("Treniranje je zavrseno!");
     net.reset_statistics();
     net.write_state();
     data.close();
